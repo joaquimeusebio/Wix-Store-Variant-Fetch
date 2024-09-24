@@ -1,0 +1,1 @@
+# Wix-Store-Variant-Fetch
