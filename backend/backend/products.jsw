@@ -1,0 +1,59 @@
+import wixStoresBackend from 'wix-stores-backend';
+import wixData from 'wix-data';
+
+/**
+ * Function to get all product variants from a specific category.
+ * @returns {Array} - Filtered product variants with price details.
+ */
+
+export async function getAllProductVariants() {
+    let filteredVariants = [];
+
+    // Step 1: Query the Products category to get all products in a specific category
+    // Replace "your-category-id" with the actual ID of your product category.
+
+    let productsQuery = await wixData.query("Stores/Products")
+        .hasSome("category", ["your-category-id"])  
+        .find();
+
+    // Step 2: Define the desired variant combinations you want to filter by
+    // Adjust these values based on the product options in your store
+
+    const desiredVariants = [
+        { Option1: "Size", Option2: "1Kg" },  // Example: Size: "1Kg"
+        { Option1: "Grind", Option2: "Beans" }  // Example: Grind: "Beans"
+    ];
+
+    // Step 3: Loop through each product and retrieve its variants
+
+    for (let product of productsQuery.items) {
+        try {
+            let variants = await wixStoresBackend.getProductVariants(product._id);
+
+            // Step 4: Filter variants that match the desired options.
+
+            let matchingVariants = variants.filter(variant => {
+                return desiredVariants.some(desired => {
+                    return variant.choices.Option1 === desired.Option1 && variant.choices.Option2 === desired.Option2;
+                });
+            });
+
+            // Step 5: Add the matching variants to the results array
+
+            matchingVariants.forEach(variant => {
+                filteredVariants.push({
+                    productId: product._id,
+                    productName: product.name,
+                    variantName: `${variant.choices.Option1} | ${variant.choices.Option2}`,
+                    price: variant.variant.price,
+                    formattedPrice: variant.variant.formattedPrice
+                });
+            });
+
+        } catch (error) {
+            console.error(`Error fetching variants for product ${product._id}:`, error);
+        }
+    }
+    // Step 6: Return the filtered variants.
+    return filteredVariants;
+}
